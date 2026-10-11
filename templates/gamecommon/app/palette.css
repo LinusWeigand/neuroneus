@@ -1,0 +1,13 @@
+:root {
+  --game-background: #0b0820;
+  --game-background-alt: #1c1145;
+  --game-surface: #251a5c;
+  --game-primary: #3df5ff;
+  --game-secondary: #ff3df2;
+  --game-accent: #ffd23d;
+  --game-danger: #ff4d6d;
+  --game-success: #5dffa8;
+  --game-text: #f4f1ff;
+  --game-text-muted: #a99ed6;
+  --game-outline: #05030f;
+}

@@ -24,6 +24,6 @@ export function startGame(parent: HTMLElement) {
     input: { activePointers: 3 },
     scene: [BootScene, TitleScene, PlayScene, PauseScene, GameOverScene],
   });
-  probe.attach(game);
+  probe.attach();
   return () => game.destroy(true);
 }

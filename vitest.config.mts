@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    include: ["src/**/*.test.ts", "eslint-rules/**/*.test.ts", "scripts/**/*.test.ts"],
+    include: ["src/**/*.test.ts", "eslint-rules/**/*.test.ts", "eslint-rules/**/*.test.mjs", "scripts/**/*.test.ts"],
     environment: "node",
   },
 });

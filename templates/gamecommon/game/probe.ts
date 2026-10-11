@@ -1,5 +1,3 @@
-import type * as Phaser from "phaser";
-
 export type ProbeState = {
   scene: string;
   score: number;
@@ -15,16 +13,29 @@ const state: ProbeState = { scene: "boot", score: 0, best: 0, lives: null, pause
 
 declare global {
   interface Window {
-    __GAME__?: { state: ProbeState; game: Phaser.Game };
+    __GAME__?: { state: ProbeState };
   }
 }
 
+let attached = false;
+
 export const probe = {
-  attach(game: Phaser.Game) {
-    window.__GAME__ = { state, game };
-    game.events.on("step", () => {
-      state.fps = Math.round(game.loop.actualFps);
-    });
+  attach() {
+    window.__GAME__ = { state };
+    if (attached) return;
+    attached = true;
+    let frames = 0;
+    let since = performance.now();
+    const count = (now: number) => {
+      frames += 1;
+      if (now - since >= 1000) {
+        state.fps = frames;
+        frames = 0;
+        since = now;
+      }
+      requestAnimationFrame(count);
+    };
+    requestAnimationFrame(count);
   },
   set(values: Partial<ProbeState>) {
     Object.assign(state, values);

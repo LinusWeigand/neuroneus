@@ -1,0 +1,63 @@
+@import "tailwindcss";
+@import "./palette.css";
+
+@theme inline {
+  --color-game-background: var(--game-background);
+  --color-game-background-alt: var(--game-background-alt);
+  --color-game-surface: var(--game-surface);
+  --color-game-primary: var(--game-primary);
+  --color-game-secondary: var(--game-secondary);
+  --color-game-accent: var(--game-accent);
+  --color-game-danger: var(--game-danger);
+  --color-game-success: var(--game-success);
+  --color-game-text: var(--game-text);
+  --color-game-text-muted: var(--game-text-muted);
+  --color-game-outline: var(--game-outline);
+  --font-game-display: var(--font-display);
+  --font-game-body: var(--font-body);
+  --animate-hud-pop: hud-pop 0.28s ease-out;
+  --animate-hud-pulse: hud-pulse 1.8s ease-in-out infinite;
+  --animate-hud-in: hud-in 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.25) both;
+}
+
+@keyframes hud-pop {
+  0% {
+    transform: scale(1.4);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes hud-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@keyframes hud-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--game-background);
+  color: var(--game-text);
+  font-family: var(--font-body), system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent;
+}

@@ -4,7 +4,7 @@ import path from "node:path";
 import type { FileMap } from "./repo";
 
 export type Framework = "web" | "game2d" | "game3d";
-export type Layer = "shared" | "starter" | Framework | "database";
+export type Layer = "shared" | "starter" | "gamecommon" | Framework | "database";
 
 export const VERSIONS = {
   next: "16.3.8",
@@ -49,16 +49,26 @@ export function layerFiles(layer: Layer): FileMap {
   return files;
 }
 
-export function fill(content: string, vars: Record<string, string>) {
-  return content.replace(/\{\{(\w+)\}\}/g, (match, key: string) => (key in vars ? JSON.stringify(vars[key]).slice(1, -1) : match));
+const RAW = /\.(md|css)$/;
+
+export function fill(content: string, vars: Record<string, string>, raw = false) {
+  return content.replace(/\{\{(\w+)\}\}/g, (match, key: string) =>
+    key in vars ? (raw ? vars[key] : JSON.stringify(vars[key]).slice(1, -1)) : match,
+  );
 }
 
 export function materialize(layers: Layer[], vars: Record<string, string>): FileMap {
   const files: FileMap = {};
   for (const layer of layers) {
-    for (const [file, content] of Object.entries(layerFiles(layer))) files[file] = fill(content, vars);
+    for (const [file, content] of Object.entries(layerFiles(layer))) files[file] = fill(content, vars, RAW.test(file));
   }
   return files;
+}
+
+function skillFiles(framework: Framework | "starter"): FileMap {
+  if (framework !== "game2d") return {};
+  const dir = path.join(root(), "templates", "skills", "phaser");
+  return Object.fromEntries(walk(dir).map((file) => [`docs/skills/phaser/${path.basename(file)}`, fs.readFileSync(file, "utf8")]));
 }
 
 export function packageJson(input: { slug: string; framework: Framework | "starter"; database: boolean }) {
@@ -100,7 +110,57 @@ export function frameworkFiles(input: {
   slug: string;
   vars: Record<string, string>;
 }): FileMap {
-  const layers: Layer[] = ["shared", input.framework === "starter" ? "starter" : input.framework];
+  const layers: Layer[] =
+    input.framework === "web"
+      ? ["shared", "starter", "web"]
+      : input.framework === "starter"
+        ? ["shared", "starter"]
+        : ["shared", "gamecommon", input.framework];
   if (input.database) layers.push("database");
-  return { ...materialize(layers, { slug: input.slug, ...input.vars }), "package.json": packageJson(input) };
+  return { ...materialize(layers, { slug: input.slug, ...input.vars }), ...skillFiles(input.framework), "package.json": packageJson(input) };
+}
+
+export type Marker = { kind?: string; design?: string | null; database?: boolean; framework?: Framework };
+
+export function readMarker(files: FileMap): Marker {
+  try {
+    return JSON.parse(files[".neuroneus.json"] ?? "{}") as Marker;
+  } catch {
+    return {};
+  }
+}
+
+export function storageNote(framework: Framework, database: boolean) {
+  if (framework === "web") {
+    return database
+      ? "Neon Postgres. `import { sql } from \"@/lib/db\"` and query with tagged templates in Server Actions and queries; never build SQL strings. Every schema change goes into `db/schema.sql` as idempotent SQL (it runs before each deploy; never drop tables or columns). Pages that read the database render per request: `export const dynamic = \"force-dynamic\";`."
+      : "No server database. Keep state in React; persist what must survive a reload on the device with localStorage (guard for server rendering).";
+  }
+  return database
+    ? "Online data (leaderboards, shared saves) goes through Server Actions using `lib/db.ts` (`sql` tagged templates); schema in `db/schema.sql`, idempotent, applied before each deploy. Local things (best score, settings) stay in `game/storage.ts`."
+    : "Nothing is stored on a server. The best score and settings live in `game/storage.ts` (localStorage).";
+}
+
+export function prepareFrameworkFiles(input: {
+  before: FileMap;
+  framework: Framework;
+  database: boolean;
+  slug: string;
+  vars: Record<string, string>;
+}): FileMap {
+  const marker = readMarker(input.before);
+  const vars = { ...input.vars, storage: storageNote(input.framework, input.database) };
+  const files = { ...input.before };
+  if (marker.framework !== input.framework) {
+    Object.assign(files, frameworkFiles({ framework: input.framework, database: input.database, slug: input.slug, vars }));
+  } else if (input.database && !marker.database) {
+    Object.assign(files, materialize(["database"], vars));
+    const pkg = JSON.parse(files["package.json"] ?? "{}") as { dependencies?: Record<string, string> };
+    pkg.dependencies = { ...(pkg.dependencies ?? {}), "@neondatabase/serverless": VERSIONS.neon };
+    files["package.json"] = JSON.stringify(pkg, null, 2) + "\n";
+  }
+  const agents = layerFiles(input.framework)["AGENTS.md"];
+  if (agents) files["AGENTS.md"] = fill(agents, { slug: input.slug, ...vars }, true);
+  files[".neuroneus.json"] = JSON.stringify({ ...marker, framework: input.framework, database: input.database }, null, 2) + "\n";
+  return files;
 }

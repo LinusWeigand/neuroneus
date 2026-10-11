@@ -10,7 +10,7 @@ const { values, positionals } = parseArgs({
   options: { out: { type: "string" }, serve: { type: "boolean" }, port: { type: "string", default: "3500" }, database: { type: "boolean" } },
 });
 
-const frameworks = (positionals.length ? positionals : ["starter", "web", "game2d"]) as (Framework | "starter")[];
+const frameworks = (positionals.length ? positionals : ["starter", "web", "game2d", "game3d"]) as (Framework | "starter")[];
 const VARS = {
   name: "Template Check",
   vision: "A sample app that proves the template builds.",
