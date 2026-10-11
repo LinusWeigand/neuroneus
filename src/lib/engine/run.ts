@@ -491,18 +491,19 @@ function humanTexts(history: MessageDTO[], project: ProjectRow) {
 async function specCompleted(args: { project: ProjectRow; spec: ProjectSpec; runId: string; emit: Emit; origin?: string }) {
   const { project, spec, runId, emit } = args;
   try {
+    const kind = spec.kind ?? "web_app";
     let slug = project.designSlug;
-    if (!slug) {
+    if (!slug && kind === "web_app") {
       slug = await chooseDesign({ projectId: project.id }, { name: project.name, vision: project.vision, spec });
       await db.update(schema.projects).set({ designSlug: slug }).where(eq(schema.projects.id, project.id));
     }
-    const kind = spec.kind ?? "web_app";
+    const design = slug ? designName(slug) : null;
     const note = await insertMessage({
       projectId: project.id,
       authorType: "moderator",
       kind: "note",
-      content: `Spec complete: ${kind === "web_game" ? "web game" : "web app"}, ${designName(slug)} design. The team starts building.`,
-      data: { type: "spec_complete", kind, design: designName(slug) },
+      content: `Spec complete: ${kind === "web_game" ? "web game" : "web app"}${design ? `, ${design} design` : ""}. The team starts building.`,
+      data: { type: "spec_complete", kind, design },
       runId,
     });
     emit({ type: "message", message: note });

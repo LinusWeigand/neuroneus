@@ -106,6 +106,17 @@ function MessageRow({
       </div>
     );
   }
+  if (msg.kind === "note" && msg.data?.type === "art_ready") {
+    return (
+      <div className="py-3 sm:pl-12">
+        <figure className="overflow-hidden rounded-xl border border-hairline bg-surface-card">
+          {/* eslint-disable-next-line @next/next/no-img-element -- generated art lives on Azure storage, outside next/image's domains (until 2027-06-30) */}
+          <img src={msg.data.conceptUrl} alt={t.build.artReady(msg.data.style)} className="block aspect-video w-full object-cover" loading="lazy" />
+          <figcaption className="px-4 py-3 text-caption text-body">{t.build.artReady(msg.data.style)}</figcaption>
+        </figure>
+      </div>
+    );
+  }
   if (msg.kind === "note") {
     const text = noteText(msg, t);
     return (
@@ -138,6 +149,8 @@ function noteText(msg: MessageDTO, t: Dictionary): string {
       return t.build.rolledBack(d.title);
     case "spec_complete":
       return t.build.specComplete(t.spec.kinds[d.kind] ?? d.kind, d.design);
+    case "art_ready":
+      return t.build.artReady(d.style);
   }
   const log = d?.type === "repo_log" ? d : legacyRepoLog(msg.content);
   return log ? t.chat.repoLog(log.count, `[${log.repo}/docs/DECISIONS.md](${log.url})`) : msg.content;

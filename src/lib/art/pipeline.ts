@@ -1,5 +1,5 @@
 import "server-only";
-import { blobUrl, fetchBytes, putBlob, sha1 } from "./blob";
+import { blobUrl, putBlob, sha1 } from "./blob";
 import { assetsTs, fontsTs, paletteCss, paletteTs, textTs } from "./codegen";
 import type { ArtPlan } from "./director";
 import { generateImage } from "./flux";
@@ -133,12 +133,13 @@ export function webPath(asset: ArtAsset) {
 export function artFiles(input: { art: GameArt; style: GameStyle; title: string; language: GameLanguage; concept: string }) {
   const { art, style } = input;
   const images = art.assets.filter((a) => a.kind === "image" && a.key).map((a) => ({ key: a.key, path: webPath(a) }));
+  const models = art.assets.filter((a) => a.kind === "model" && a.key).map((a) => ({ key: a.key, path: webPath(a) }));
   const lock = Object.fromEntries(art.assets.map((a) => [a.path, { sha1: a.sha1, size: a.size, url: a.url }]));
   return {
     "game/palette.ts": paletteTs(style),
     "app/palette.css": paletteCss(style),
     "app/fonts.ts": fontsTs(style),
-    "game/assets.ts": assetsTs(images),
+    "game/assets.ts": assetsTs(images, [], models),
     "game/text.ts": textTs(gameText(input.language, input.title, art.tagline)),
     "assets.lock.json": JSON.stringify(lock, null, 2) + "\n",
     "docs/ART-DIRECTION.md": artDirection(input),

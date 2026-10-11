@@ -26,6 +26,7 @@ export function toProjectDTO(p: ProjectRow): ProjectDTO {
     builderModel: p.builderModel,
     spec: p.spec ?? null,
     designSlug: p.designSlug,
+    art: p.art ?? null,
     infraError: p.infraError,
     running: isRunning(p),
     createdAt: p.createdAt.toISOString(),

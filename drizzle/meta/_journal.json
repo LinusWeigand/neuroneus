@@ -43,6 +43,13 @@
       "when": 1791103792179,
       "tag": "0005_drop_build_blobs_from_rows",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1791755823814,
+      "tag": "0006_project_art",
+      "breakpoints": true
     }
   ]
 }

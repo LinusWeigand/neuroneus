@@ -21,9 +21,12 @@ import { applySchema } from "./neon";
 import { planRound } from "./planner";
 import { commitChanges, type FileMap, readRepo } from "./repo";
 import { deployStage } from "./deploy-stage";
-import { buildErrors, deploy, getDeployment, latestLogLines, productionUrl } from "./vercel";
+import { buildErrors, deploy, getDeployment, latestLogLines, productionUrl, promote } from "./vercel";
+import { advanceArt, artConfigured, type ArtState } from "./art-step";
+import { readMarker } from "./frameworks";
+import { capture, type Capture, judge, polishLog, verdictLog, verificationConfigured } from "./verify";
 
-const ACTIVE: BuildStatus[] = ["queued", "setup", "planning", "building"];
+const ACTIVE: BuildStatus[] = ["queued", "setup", "art", "planning", "building"];
 const LEASE_MS = 310_000;
 const AGENT_SOFT_MS = 185_000;
 const AGENT_HARD_MS = 262_000;
@@ -141,7 +144,7 @@ export function toBuildDTO(b: LightBuild): BuildDTO {
     status: b.status,
     phase: b.phase ?? null,
     taskIndex: b.taskIndex,
-    tasks: b.tasks.map((t) => ({ id: t.id, title: t.title, agentId: t.agentId, status: t.status, summary: t.summary })),
+    tasks: b.tasks.map((t) => ({ id: t.id, title: t.title, agentId: t.agentId, status: t.status, summary: t.summary, verification: t.verification })),
     error: b.error,
     activity: ACTIVE.includes(b.status) ? (b.activity ?? null) : null,
     phaseStartedAt: b.phaseStartedAt?.toISOString() ?? null,
@@ -237,9 +240,12 @@ async function advance(build: BuildRow): Promise<boolean> {
           await saveBlobs(build.id, { files, good: files });
           await transition(build.id, { status: "building", phase: "deploy", tasks: [] });
         } else {
-          const { files } = await prepareApp(project, { projectId: project.id, buildId: build.id }, onStage);
-          await saveBlobs(build.id, { files, good: files });
-          await transition(build.id, { status: "planning" });
+          const { language } = await buildContext(project);
+          const prepared = await prepareApp(project, { projectId: project.id, buildId: build.id }, language, onStage);
+          await saveBlobs(build.id, { files: prepared.files, good: prepared.files });
+          const needsArt = (prepared.framework === "game2d" || prepared.framework === "game3d") && !prepared.project.art && artConfigured();
+          if (needsArt) await saveBlobs(build.id, { art: { stage: "plan" } satisfies ArtState });
+          await transition(build.id, { status: needsArt ? "art" : "planning" });
         }
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
@@ -248,6 +254,9 @@ async function advance(build: BuildRow): Promise<boolean> {
       }
       return true;
     }
+
+    case "art":
+      return artStep(build, project);
 
     case "planning": {
       await setActivity(build.id, { kind: "planning" });
@@ -278,6 +287,7 @@ async function advance(build: BuildRow): Promise<boolean> {
 
     case "building":
       if (build.phase === "deploy") return deployStep(build, project);
+      if (build.phase === "verify") return verifyStep(build, project);
       return implementStep(build, project);
 
     default:
@@ -365,7 +375,7 @@ async function deployStep(build: BuildRow, project: ProjectRow): Promise<boolean
         return buildFailed(build, project, `Applying db/schema.sql failed: ${err instanceof Error ? err.message : err}`);
       }
     }
-    const d = await deploy(vercel, files);
+    const d = await deploy(vercel, files, { production: !verifies(build) });
     deploymentId = d.id;
     await patch(build.id, { deploymentId });
     await logEvent(build.id, { kind: "deploy_started", agentId, taskIndex: build.taskIndex });
@@ -385,6 +395,10 @@ async function deployStep(build: BuildRow, project: ProjectRow): Promise<boolean
   }
   if (d.readyState === "READY") {
     await logEvent(build.id, { kind: "deploy_ready", agentId, taskIndex: build.taskIndex });
+    if (verifies(build)) {
+      await transition(build.id, { phase: "verify" });
+      return true;
+    }
     return deployed(build, project);
   }
   if (d.readyState === "ERROR" || d.readyState === "CANCELED") {
@@ -393,6 +407,126 @@ async function deployStep(build: BuildRow, project: ProjectRow): Promise<boolean
     return buildFailed(build, project, log || d.errorMessage || "The build failed without output.");
   }
   return true;
+}
+
+function verifies(build: BuildRow) {
+  return build.kind === "build" && verificationConfigured();
+}
+
+const ART_STAGE: Record<ArtState["stage"], string> = { plan: "plan", picks: "picks", concept: "concept", assets: "assets", install: "install" };
+
+async function artStep(build: BuildRow, project: ProjectRow): Promise<boolean> {
+  const state = (await loadBlob<ArtState>(build.id, "art")) ?? { stage: "plan" };
+  await setActivity(build.id, { kind: "art", stage: ART_STAGE[state.stage] });
+  const ctx = await buildContext(project);
+  const files = (await loadBlob<FileMap>(build.id, "files")) ?? {};
+  const framework = readMarker(files).framework;
+  const result = await advanceArt({
+    state,
+    scope: { projectId: project.id, buildId: build.id },
+    project,
+    spec: ctx.spec,
+    language: ctx.language,
+    dimension: framework === "game3d" ? "3d" : "2d",
+    files,
+  });
+  if (!result.done) {
+    await saveBlobs(build.id, { art: result.state });
+    await patch(build.id, {});
+    return true;
+  }
+  const artist = resolveAgents(project.agentIds).find((a) => a.id === "iris")?.name ?? "Neuroneus";
+  await commitChanges(project.repoFullName!, files, result.files, `Add the art: ${result.styleName}`, AGENT_AUTHOR(artist), result.binaries);
+  await db.update(schema.projects).set({ art: result.art, updatedAt: new Date() }).where(eq(schema.projects.id, project.id));
+  await saveBlobs(build.id, { files: result.files, good: result.files, art: null });
+  await logEvent(build.id, { kind: "art_ready", detail: result.styleName });
+  await note(project.id, `Art direction: ${result.styleName}.`, { type: "art_ready", style: result.styleName, conceptUrl: result.art.conceptUrl });
+  await transition(build.id, { status: "planning" });
+  return true;
+}
+
+type VerifyState = { capture: Capture };
+
+async function verifyStep(build: BuildRow, project: ProjectRow): Promise<boolean> {
+  const task = build.tasks[build.taskIndex];
+  const vercel = vercelOf(project);
+  if (!task || !vercel || !build.deploymentId) return deployed(build, project);
+  const agentId = task.agentId;
+  const files = (await loadBlob<FileMap>(build.id, "files")) ?? {};
+  const framework = readMarker(files).framework;
+  const game = project.spec?.kind === "web_game";
+  const state = await loadBlob<VerifyState>(build.id, "verify");
+
+  if (!state) {
+    const d = await getDeployment(build.deploymentId);
+    try {
+      const result = await capture({
+        url: `https://${d.url}`,
+        game,
+        evidencePrefix: `${project.id}/${build.id}/${task.id}-${build.fixAttempts}`,
+        onStage: (stage) => setActivity(build.id, { kind: "verifying", stage, agentId }),
+      });
+      await saveBlobs(build.id, { verify: { capture: result } satisfies VerifyState });
+      await patch(build.id, {});
+      return true;
+    } catch (err) {
+      console.error("[build] verification capture failed, shipping unverified", err);
+      return ship(build, project, vercel.id, null);
+    }
+  }
+
+  await setActivity(build.id, { kind: "judging", agentId });
+  const ctx = await buildContext(project);
+  const verdict = await judge({
+    scope: { projectId: project.id, buildId: build.id },
+    task,
+    spec: ctx.spec,
+    capture: state.capture,
+    conceptUrl: game ? (project.art?.conceptUrl ?? null) : null,
+    artDirection: game ? (files["docs/ART-DIRECTION.md"]?.split("## Assets")[0] ?? null) : null,
+  }).catch((err) => {
+    console.error("[build] judging failed, shipping unverified", err);
+    return null;
+  });
+  await saveBlobs(build.id, { verify: null });
+  if (!verdict) return ship(build, project, vercel.id, null);
+
+  const verification = {
+    ...verdict,
+    screenshots: state.capture.shots.map((s) => s.url),
+    url: state.capture.url,
+    checkedAt: new Date().toISOString(),
+  };
+  const tasks = withTask(build.tasks, build.taskIndex, { verification });
+  await patch(build.id, { tasks });
+  const current = { ...build, tasks };
+
+  if (!verdict.works) {
+    await logEvent(build.id, { kind: "verify_failed", agentId, taskIndex: build.taskIndex, detail: verdict.problems[0]?.slice(0, 200) });
+    return buildFailed(current, project, verdictLog(verdict, state.capture));
+  }
+  const polish = game && framework && (verdict.visualScore ?? 10) < 6 && !task.polished && build.fixAttempts < MAX_FIXES;
+  if (polish) {
+    await logEvent(build.id, { kind: "verify_failed", agentId, taskIndex: build.taskIndex, detail: verdict.notes[0]?.slice(0, 200) });
+    await transition(build.id, {
+      tasks: withTask(tasks, build.taskIndex, { polished: true }),
+      phase: "fix",
+      fixAttempts: build.fixAttempts + 1,
+      lastError: polishLog(verdict),
+      deploymentId: null,
+    });
+    return true;
+  }
+  await logEvent(build.id, { kind: "verified", agentId, taskIndex: build.taskIndex });
+  return ship(current, project, vercel.id, build.deploymentId);
+}
+
+async function ship(build: BuildRow, project: ProjectRow, vercelProjectId: string, deploymentId: string | null): Promise<boolean> {
+  const agentId = build.tasks[build.taskIndex]?.agentId;
+  await setActivity(build.id, { kind: "shipping", agentId });
+  await promote(vercelProjectId, deploymentId ?? build.deploymentId!);
+  await logEvent(build.id, { kind: "shipped", agentId, taskIndex: build.taskIndex });
+  return deployed(build, project);
 }
 
 async function deployed(build: BuildRow, project: ProjectRow): Promise<boolean> {

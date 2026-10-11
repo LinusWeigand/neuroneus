@@ -58,7 +58,7 @@ Plan:
 - background: a prompt for the gameplay background alone, with no characters, items, text or UI, leaving open space where the action happens.
 - title: a prompt for the title screen art: the game's world and hero as key art, with empty space at the top for the logo, no text.
 - tagline: one short line under the logo, in ${input.language}, max 6 words.
-- sprites: only for styles that paint their own sprites: the 2 to 6 key game objects the code needs (player, enemies, items, obstacles), each as one object. key: a camelCase id the code uses (e.g. player, carrot, hawk, fox, hole). prompt: the object alone, its look, pose and colors; never a scene. size: its display size in the game in px (on a 1280×720 screen), 32 to 220.
+- sprites: only for styles that paint their own sprites: the 2 to 6 key game objects the code needs (player, enemies, items, obstacles), each as one object. key: a camelCase id the code uses (e.g. player, carrot, hawk, fox, hole); the object the player controls is always player. prompt: the object alone, its look, pose and colors; never a scene. size: its display size in the game in px (on a 1280×720 screen), 32 to 220.
 - Prompts are in English, concrete about shapes, colors and mood, and never name brands, artists or existing games.`,
     prompt: `Game: ${input.name}\nVision: ${input.vision}\n\nSpec:\n${input.spec}`,
   });
@@ -101,7 +101,7 @@ export async function pickKenney(scope: UsageScope, input: { style: GameStyle; s
     abortSignal: AbortSignal.timeout(200_000),
     instructions: `You pick ready-made ${input.style.dimension.toUpperCase()} game assets from a library for a ${input.style.name} game. Pick the 3 to 14 files the game's code needs: the player, enemies, items, obstacles and the tiles or props for the world. Use files from one pack where possible, so the look stays consistent.
 
-For each pick: key (a camelCase id the code uses, e.g. player, coin, groundTile, tree), pack, file (exactly as listed), size (display size in px on a 1280×720 screen, or the length in world units for 3D models, 1 to 40).
+For each pick: key (a camelCase id the code uses, e.g. player, coin, groundTile, tree; the object the player controls is always player), pack, file (exactly as listed), size (display size in px on a 1280×720 screen, or the length in world units for 3D models, 1 to 40).
 
 Library:
 ${packListing(input.index, packs)}`,

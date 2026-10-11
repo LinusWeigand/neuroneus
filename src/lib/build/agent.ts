@@ -27,7 +27,7 @@ const MAX_FILES = 300;
 const MAX_FILE_CHARS = 150_000;
 const MAX_STEPS = 30;
 const PROTECTED = /^(\.git\/|node_modules\/|\.next\/|\.env)/;
-const PRELOADED = ["AGENTS.md", "docs/DESIGN-BRIEF.md"];
+const PRELOADED = ["AGENTS.md", "docs/DESIGN-BRIEF.md", "docs/ART-DIRECTION.md"];
 const COMPACT_AT = 200_000;
 const KEEP_RECENT = 6;
 
@@ -71,7 +71,9 @@ function instructions(
   const preloaded = PRELOADED.filter((p) => files[p])
     .map((p) => `<file path="${p}">\n${files[p].trim()}\n</file>`)
     .join("\n\n");
-  const design = !ctx.designName
+  const design = files["docs/ART-DIRECTION.md"]
+    ? "the art direction in docs/ART-DIRECTION.md (below): its palette, type, look, rules and asset list. A reviewer compares every deploy with its target screenshot, so make the game look like it."
+    : !ctx.designName
     ? "keep it clean and consistent."
     : brief
       ? `the ${ctx.designName} design system. docs/DESIGN-BRIEF.md (below) has its tokens and rules; follow it strictly for every pixel and never invent colors or styles outside it. DESIGN.md has the full system: read the section you need (search it) only when the brief doesn't cover a component.`
@@ -82,6 +84,7 @@ function instructions(
 How to work:
 - The project's conventions, design brief and spec are below, with a map of every file (size in characters, and what code files export). Files shown in full below need no reading.
 - Read only the files the task touches, several at once with read_files. Use search to find usages instead of reading whole files.
+- After you call finish, the platform builds the app, a reviewer plays the deployed preview and compares it with the task, the spec${ctx.kind === "web_game" ? " and the target screenshot" : ""}; only then does it ship. Make it work end to end.
 - Make complete, focused changes. The app must build under strict TypeScript and the feature must work end to end, including empty, loading and error states.
 - You cannot run commands. Be careful with imports, types and Next.js 16 APIs; check that every import you add exists.
 - Use edit_file for small changes and write_file for new files or full rewrites.
@@ -113,7 +116,11 @@ ${task.detail}
 ${
   fix
     ? `
-The last deploy of this task FAILED to build. Fix the cause with the smallest change that keeps the task's intent. Build output:
+${
+        /^(Verification|It works)/.test(fix)
+          ? "A reviewer played the deployed preview of this task. Address every point with the smallest change that keeps the task's intent:"
+          : "The last deploy of this task FAILED to build. Fix the cause with the smallest change that keeps the task's intent. Build output:"
+      }
 \`\`\`
 ${fix.slice(0, 6000)}
 \`\`\`

@@ -5,6 +5,7 @@ import type { AgentDef } from "@/lib/agents";
 import { callSettings, modelFor, plannerModelId } from "@/lib/ai";
 import { recordUsage, type UsageScope } from "@/lib/usage";
 import { type BuildContext, codeMap } from "./agent";
+import { readMarker } from "./frameworks";
 import type { FileMap } from "./repo";
 
 const planSchema = z.object({
@@ -15,6 +16,14 @@ const planSchema = z.object({
     }),
   ),
 });
+
+const FRAMEWORK_NOTES: Record<string, string> = {
+  game2d:
+    "Phaser 4 game in game/ (scenes in game/scenes, UI in game/ui.ts, game feel in game/juice.ts, assets by key from game/assets.ts). Menus and HUD are in the engine, never React. A reviewer plays every deploy.",
+  game3d:
+    "Three.js game in game/ (scene setup in game/world.ts, the game in game/play.ts, HUD in components/hud.tsx, models by key from game/assets.ts). A reviewer plays every deploy.",
+  web: "Next.js app: routes in app/, features in features/<feature>/, shared UI in components/ui, tokens in app/globals.css. A reviewer opens every deploy on desktop and phone.",
+};
 
 export type PlannedTask = { title: string; detail: string; agentId: string };
 
@@ -27,6 +36,9 @@ export async function planRound(args: {
   round: number;
 }): Promise<PlannedTask[]> {
   const { ctx } = args;
+  const framework = readMarker(args.files).framework ?? null;
+  const art = args.files["docs/ART-DIRECTION.md"];
+  const assets = art ? art.slice(art.indexOf("## Assets")).trim() : "";
   const max = args.round <= 1 ? 5 : 4;
   const model = plannerModelId();
 
@@ -44,7 +56,12 @@ Vision: ${ctx.vision}
 Spec (complete; build exactly this, nothing it puts out of scope):
 ${ctx.spec}
 
-Design system: ${ctx.designName ? `${ctx.designName} (DESIGN.md in the repo). Every task builds to it.` : "none."}
+${
+      art
+        ? `Art direction: docs/ART-DIRECTION.md, with painted art ready to use:\n${assets}`
+        : `Design system: ${ctx.designName ? `${ctx.designName} (DESIGN.md in the repo). Every task builds to it.` : "none."}`
+    }
+${framework ? `Framework: ${FRAMEWORK_NOTES[framework]}` : ""}
 
 Decisions the human made (respect them):
 ${ctx.decisions.map((d) => `- ${d.header}: ${d.choice}`).join("\n") || "None yet."}
@@ -59,7 +76,9 @@ Rules:
 - ${
       args.round <= 1
         ? ctx.kind === "web_game"
-          ? "The first task makes the game playable end to end on the canvas shell: start screen, the core loop, game over and restart, styled with DESIGN.md's tokens. Later tasks add mechanics, progression and feedback."
+          ? framework
+            ? "The first task builds the real game in place of the placeholder play scene: the core loop with the painted assets (by key), win/lose and score, juice on every action, title and game-over text adapted to the game. Later tasks add mechanics, progression and polish."
+            : "The first task makes the game playable end to end on the canvas shell: start screen, the core loop, game over and restart, styled with DESIGN.md's tokens. Later tasks add mechanics, progression and feedback."
           : "The first task sets up DESIGN.md's tokens and fonts, and replaces the placeholder with the real app shell and the core feature, so the human sees the product take shape immediately."
         : "Build on what's shipped. Don't redo it."
     }

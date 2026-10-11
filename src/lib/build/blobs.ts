@@ -3,7 +3,7 @@ import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, schema } from "@/lib/db";
 import { decodeBlob, encodeBlob } from "./blob-codec";
 
-type BlobName = "files" | "good" | "task";
+type BlobName = "files" | "good" | "task" | "art" | "verify";
 
 export async function loadBlob<T>(buildId: string, name: BlobName): Promise<T | null> {
   const [row] = await db

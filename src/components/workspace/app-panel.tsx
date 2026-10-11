@@ -12,7 +12,7 @@ import { isBuildActive } from "@/components/workspace/use-project-chat";
 import { compactNumber, type Dictionary } from "@/lib/i18n/dictionaries";
 import { modelLabel, type ModelOption } from "@/lib/models";
 import { openSpecPoints, specComplete, specProgress } from "@/lib/spec/templates";
-import type { BuildDTO, BuildEventDTO, ProjectDTO } from "@/lib/types";
+import type { BuildDTO, BuildEventDTO, ProjectDTO, Verification } from "@/lib/types";
 
 type Tone = "active" | "live" | "failed" | "idle";
 
@@ -23,10 +23,12 @@ export function buildStatus(t: Dictionary, project: ProjectDTO, build: BuildDTO 
     const task = build.tasks[build.taskIndex];
     if (build.status === "queued") return { label: t.app.status.queued, tone: "active" };
     if (build.status === "setup") return { label: t.app.status.setup, tone: "active" };
+    if (build.status === "art") return { label: t.app.status.art, tone: "active" };
     if (build.status === "planning") return { label: t.app.status.planning, tone: "active" };
     if (build.kind === "setup" || !task) return { label: t.app.status.deploying, tone: "active" };
     if (build.phase === "fix") return { label: t.app.status.fixing(task.title), tone: "active" };
     if (build.phase === "deploy") return { label: `${t.app.status.deploying} · ${task.title}`, tone: "active" };
+    if (build.phase === "verify") return { label: t.app.status.verifying(task.title), tone: "active" };
     return { label: t.app.status.building(build.taskIndex + 1, build.tasks.length, task.title), tone: "active" };
   }
   if (build?.status === "failed") return { label: t.app.status.failed, tone: "failed" };
@@ -245,6 +247,7 @@ export function AppPanel({
                       <ActivityFeed events={taskEvents} now={now} />
                     </div>
                   )}
+                  {task.verification && <Evidence verification={task.verification} />}
                 </li>
               );
             })}
@@ -259,6 +262,27 @@ export function AppPanel({
           <p className="mt-2 line-clamp-3 text-caption text-error">{build.error}</p>
         )}
       </div>
+    </div>
+  );
+}
+
+function Evidence({ verification }: { verification: Verification }) {
+  const { t } = useI18n();
+  return (
+    <div className="mt-2 pl-8">
+      <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-caption">
+        <span className={verification.works ? "text-success" : "text-error"}>{verification.works ? t.live.verify.works : t.live.verify.broken}</span>
+        {verification.visualScore !== null && <span className="text-muted">· {t.live.verify.visual(verification.visualScore)}</span>}
+      </div>
+      <div className="mt-1.5 flex gap-1.5 overflow-x-auto pb-1" aria-label={t.live.verify.evidence}>
+        {verification.screenshots.map((src) => (
+          <a key={src} href={src} target="_blank" rel="noreferrer" className="shrink-0 overflow-hidden rounded-md border border-hairline">
+            {/* eslint-disable-next-line @next/next/no-img-element -- evidence lives on Azure storage, outside next/image's domains (until 2027-06-30) */}
+            <img src={src} alt="" className="h-14 w-auto" loading="lazy" />
+          </a>
+        ))}
+      </div>
+      {!verification.works && verification.problems[0] && <p className="mt-1 line-clamp-2 text-caption text-muted">{verification.problems[0]}</p>}
     </div>
   );
 }

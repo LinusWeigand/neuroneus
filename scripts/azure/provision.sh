@@ -64,7 +64,7 @@ properties:
       - name: browser
         image: mcr.microsoft.com/playwright:v$PLAYWRIGHT-noble
         command: ["/bin/sh", "-c"]
-        args: ["npx -y playwright@$PLAYWRIGHT run-server --port 3000 --host 0.0.0.0 --path /\$WS_PATH"]
+        args: ["npx -y playwright@$PLAYWRIGHT run-server --port 3000 --host 0.0.0.0 --unsafe --path /\$WS_PATH"]
         env:
           - name: WS_PATH
             secretRef: wspath

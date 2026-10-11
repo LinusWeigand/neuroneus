@@ -51,10 +51,23 @@ export type BuildNoteData =
   | { type: "build_done"; round: number; done: number; total: number; url: string | null; budget?: boolean }
   | { type: "build_failed"; round: number; reason: string }
   | { type: "task_rolled_back"; round: number; title: string }
-  | { type: "spec_complete"; kind: "web_app" | "web_game"; design: string | null };
+  | { type: "spec_complete"; kind: "web_app" | "web_game"; design: string | null }
+  | { type: "art_ready"; style: string; conceptUrl: string };
 
-export type BuildStatus = "queued" | "setup" | "planning" | "building" | "done" | "failed" | "cancelled";
-export type BuildPhase = "implement" | "fix" | "deploy";
+export type BuildStatus = "queued" | "setup" | "art" | "planning" | "building" | "done" | "failed" | "cancelled";
+export type BuildPhase = "implement" | "fix" | "deploy" | "verify";
+
+export type Verification = {
+  works: boolean;
+  visualScore: number | null;
+  problems: string[];
+  notes: string[];
+  screenshots: string[];
+  url: string;
+  checkedAt: string;
+};
+
+export type ProjectArt = { style: string; styleName: string; conceptUrl: string; titleUrl: string | null; dimension: "2d" | "3d" };
 
 export type BuildTask = {
   id: string;
@@ -63,10 +76,27 @@ export type BuildTask = {
   agentId: string;
   status: "pending" | "working" | "done" | "failed" | "skipped";
   summary?: string;
+  verification?: Verification;
+  polished?: boolean;
 };
 
 export type BuildActivity = {
-  kind: "setup" | "planning" | "thinking" | "listing" | "reading" | "searching" | "writing" | "editing" | "deleting" | "schema" | "deploying";
+  kind:
+    | "setup"
+    | "art"
+    | "planning"
+    | "thinking"
+    | "listing"
+    | "reading"
+    | "searching"
+    | "writing"
+    | "editing"
+    | "deleting"
+    | "schema"
+    | "deploying"
+    | "verifying"
+    | "judging"
+    | "shipping";
   agentId?: string;
   path?: string;
   chars?: number;
@@ -88,7 +118,11 @@ export type BuildEventKind =
   | "deploy_started"
   | "deploy_ready"
   | "deploy_failed"
-  | "rolled_back";
+  | "rolled_back"
+  | "art_ready"
+  | "verified"
+  | "verify_failed"
+  | "shipped";
 
 export type BuildEventDTO = {
   id: number;
@@ -169,6 +203,7 @@ export type ProjectDTO = {
   builderModel: string | null;
   spec: ProjectSpec | null;
   designSlug: string | null;
+  art: ProjectArt | null;
   infraError: string | null;
   running: boolean;
   createdAt: string;

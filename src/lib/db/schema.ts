@@ -20,6 +20,7 @@ import type {
   BuildTask,
   DecisionAnswerData,
   DecisionCard,
+  ProjectArt,
   RepoLogData,
   UsagePurpose,
 } from "@/lib/types";
@@ -45,6 +46,7 @@ export const projects = pgTable("projects", {
   infraError: text("infra_error"),
   spec: jsonb("spec").$type<ProjectSpec | null>(),
   designSlug: text("design_slug"),
+  art: jsonb("art").$type<ProjectArt | null>(),
   builderModel: text("builder_model"),
   buildRequested: boolean("build_requested").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
@@ -148,7 +150,7 @@ export const buildBlobs = pgTable(
     buildId: uuid("build_id")
       .notNull()
       .references(() => builds.id, { onDelete: "cascade" }),
-    name: text("name").$type<"files" | "good" | "task">().notNull(),
+    name: text("name").$type<"files" | "good" | "task" | "art" | "verify">().notNull(),
     data: bytea("data").notNull(),
     updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
   },

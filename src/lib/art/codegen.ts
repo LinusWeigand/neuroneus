@@ -49,7 +49,8 @@ export function paletteCss(style: GameStyle) {
   return `:root {\n${vars}\n}\n`;
 }
 
-export function assetsTs(images: ImageAsset[], sheets: SheetAsset[] = []) {
+export function assetsTs(images: ImageAsset[], sheets: SheetAsset[] = [], models: ImageAsset[] = []) {
+  const modelLines = models.map((a) => `  ${JSON.stringify(a.key)}: ${JSON.stringify(a.path)},`).join("\n");
   const imageLines = images.map((a) => `  ${JSON.stringify(a.key)}: ${JSON.stringify(a.path)},`).join("\n");
   const sheetLines = sheets
     .map((s) => `  ${JSON.stringify(s.key)}: { url: ${JSON.stringify(s.path)}, frameWidth: ${s.frameWidth}, frameHeight: ${s.frameHeight} },`)
@@ -60,10 +61,13 @@ export const IMAGES = {${imageLines ? `\n${imageLines}\n` : ""}} as const satisf
 
 export const SPRITESHEETS = {${sheetLines ? `\n${sheetLines}\n` : ""}} as const satisfies Record<string, Sheet>;
 
+export const MODELS = {${modelLines ? `\n${modelLines}\n` : ""}} as const satisfies Record<string, string>;
+
 export type ImageKey = keyof typeof IMAGES;
 
 export const IMAGE_ENTRIES = Object.entries(IMAGES as Record<string, string>);
 export const SPRITESHEET_ENTRIES = Object.entries(SPRITESHEETS as Record<string, Sheet>);
+export const MODEL_ENTRIES = Object.entries(MODELS as Record<string, string>);
 
 export function hasImage(key: string): key is ImageKey {
   return key in IMAGES;
