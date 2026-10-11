@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "./palette.css";
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  background: var(--game-background);
+  -webkit-tap-highlight-color: transparent;
+}

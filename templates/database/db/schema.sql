@@ -1,0 +1,3 @@
+-- The database schema. Idempotent statements only (CREATE TABLE IF NOT EXISTS,
+-- ALTER TABLE ... ADD COLUMN IF NOT EXISTS, CREATE INDEX IF NOT EXISTS).
+-- Applied automatically before every deploy.

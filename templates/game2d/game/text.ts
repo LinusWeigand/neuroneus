@@ -1,0 +1,17 @@
+export const TEXT = {
+  title: "{{name}}",
+  tagline: "{{tagline}}",
+  pressToStart: "Press Space to start",
+  tapToStart: "Tap to start",
+  best: "Best",
+  score: "Score",
+  lives: "Lives",
+  paused: "Paused",
+  resume: "Resume",
+  restart: "Restart",
+  toTitle: "Title screen",
+  gameOver: "Game over",
+  playAgain: "Play again",
+  newBest: "New best!",
+  hint: "Arrows or WASD to move · Esc to pause · M to mute",
+} as const;
