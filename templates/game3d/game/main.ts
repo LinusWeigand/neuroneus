@@ -36,6 +36,7 @@ export function startGame(host: HTMLElement) {
     renderer.domElement.style.width = "100%";
     renderer.domElement.style.height = "100%";
     camera.aspect = width / Math.max(1, height);
+    camera.fov = fieldOfView(camera.aspect);
     camera.updateProjectionMatrix();
     look.setSize(width, height);
   };
@@ -125,4 +126,10 @@ export function startGame(host: HTMLElement) {
     renderer.dispose();
     renderer.domElement.remove();
   };
+}
+
+function fieldOfView(aspect: number) {
+  const minHorizontal = THREE.MathUtils.degToRad(62);
+  const vertical = THREE.MathUtils.radToDeg(2 * Math.atan(Math.tan(minHorizontal / 2) / aspect));
+  return THREE.MathUtils.clamp(vertical, 55, 85);
 }
