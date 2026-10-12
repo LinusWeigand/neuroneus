@@ -5,10 +5,10 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ["@octokit/rest", "@octokit/auth-app", "pg", "getdesign", "sharp", "playwright-core"],
   outputFileTracingIncludes: {
     "/api/**": [
-      "./node_modules/getdesign/templates/**/*",
-      "./node_modules/getdesign/package.json",
+      "./node_modules/.pnpm/getdesign@*/node_modules/getdesign/templates/**/*",
+      "./node_modules/.pnpm/getdesign@*/node_modules/getdesign/package.json",
     ],
-    "/**": ["./node_modules/playwright-core/browsers.json", "./node_modules/playwright-core/package.json"],
+    "/**": ["./node_modules/.pnpm/playwright-core@*/node_modules/playwright-core/browsers.json"],
   },
   outputFileTracingExcludes: {
     "/**": ["./templates/**/*"],

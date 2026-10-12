@@ -114,6 +114,19 @@ async function api<T>(base: string, route: string): Promise<{ status: number; bo
   return { status: res.status, body: (await res.json().catch(() => null)) as T | null };
 }
 
+function packagesTracedThroughSymlinks(standalone: string) {
+  const names = fs.readdirSync(path.join(standalone, "node_modules")).flatMap((name) =>
+    name.startsWith("@") && !fs.lstatSync(path.join(standalone, "node_modules", name)).isSymbolicLink()
+      ? fs.readdirSync(path.join(standalone, "node_modules", name)).map((child) => `${name}/${child}`)
+      : [name],
+  );
+  return names.filter((name) => {
+    const source = path.join(ROOT, "node_modules", name);
+    const shipped = path.join(standalone, "node_modules", name);
+    return fs.existsSync(source) && fs.lstatSync(source).isSymbolicLink() && !fs.lstatSync(shipped).isSymbolicLink();
+  });
+}
+
 async function launch(profile: Profile, preferredPort: number) {
   const existing = readInstance();
   if (existing && alive(existing.pid)) out({ ok: false, error: "An instance is already running.", instance: existing });
@@ -135,6 +148,13 @@ async function launch(profile: Profile, preferredPort: number) {
   const log = path.join(STATE_DIR, `instance-${port}.log`);
   const logFd = fs.openSync(log, "w");
   const standalone = path.join(ROOT, ".next", "standalone");
+  const broken = packagesTracedThroughSymlinks(standalone);
+  if (broken.length) {
+    out({
+      ok: false,
+      error: `Vercel would reject this deploy ("files in symlinked directories"): ${broken.join(", ")} became real folders in the server bundle. Trace files through node_modules/.pnpm/<package>@<version>/..., never through the node_modules/<package> symlink.`,
+    });
+  }
   fs.cpSync(path.join(ROOT, ".next", "static"), path.join(standalone, ".next", "static"), { recursive: true });
   if (fs.existsSync(path.join(ROOT, "public"))) fs.cpSync(path.join(ROOT, "public"), path.join(standalone, "public"), { recursive: true });
   const server = spawn("node", ["server.js"], {
