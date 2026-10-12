@@ -69,8 +69,8 @@ properties:
           - name: WS_PATH
             secretRef: wspath
         resources:
-          cpu: 2
-          memory: 4Gi
+          cpu: 4
+          memory: 8Gi
     scale:
       minReplicas: 0
       maxReplicas: 2

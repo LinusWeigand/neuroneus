@@ -6,7 +6,7 @@ import { callSettings, modelFor, structuredModelId } from "@/lib/ai";
 import { putBlob, storageConfigured } from "@/lib/art/blob";
 import { recordUsage, type UsageScope } from "@/lib/usage";
 import type { BuildTask } from "@/lib/types";
-import { type Capture, type CaptureStage, reviewFacts, type Shot, type Verdict } from "./review";
+import { type Capture, type CaptureStage, holdFor, reviewFacts, type Shot, type Verdict } from "./review";
 
 
 const LAUNCH_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
@@ -64,9 +64,11 @@ export async function capture(input: {
       await page.mouse.click(640, 420);
       await page.waitForFunction(() => (window as ProbeWindow).__GAME__?.state?.scene === "play", null, { timeout: 15_000 }).catch(() => {});
       await input.onStage("play");
+      await page.waitForTimeout(1500);
+      const hold = holdFor((await probeState(page))?.fps);
       for (const [i, key] of PLAY_KEYS.entries()) {
         await page.keyboard.down(key === "Space" ? " " : key);
-        await page.waitForTimeout(650);
+        await page.waitForTimeout(hold);
         await page.keyboard.up(key === "Space" ? " " : key);
         if (i === 3) await shoot("play-early");
       }

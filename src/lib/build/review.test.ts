@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { reviewFacts, type Capture } from "./review";
+import { holdFor, reviewFacts, type Capture } from "./review";
 
 const capture: Capture = {
   url: "https://lantern-drift-abc.vercel.app",
@@ -22,5 +22,14 @@ describe("reviewFacts", () => {
     const facts = reviewFacts({ ...capture, game: false, probe: null, errors: ["TypeError: x is undefined"] });
     expect(facts).toContain("phone (390 px)");
     expect(facts).toContain("TypeError: x is undefined");
+  });
+});
+
+describe("holdFor", () => {
+  it("holds keys longer when the software renderer runs the game slowly, up to five times", () => {
+    expect(holdFor(60)).toBe(650);
+    expect(holdFor(10)).toBe(1300);
+    expect(holdFor(1)).toBe(3250);
+    expect(holdFor(undefined)).toBe(650);
   });
 });

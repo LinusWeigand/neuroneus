@@ -3,6 +3,13 @@ export type Shot = { name: string; url: string };
 export type Capture = { url: string; status: number | null; shots: Shot[]; probe: Record<string, unknown> | null; errors: string[]; game: boolean };
 export type Verdict = { works: boolean; problems: string[]; visualScore: number | null; notes: string[] };
 
+const REAL_DEVICE_FPS = 20;
+
+export function holdFor(fps: unknown) {
+  const measured = typeof fps === "number" && fps > 0 ? fps : REAL_DEVICE_FPS;
+  return Math.round(650 * Math.min(5, Math.max(1, REAL_DEVICE_FPS / measured)));
+}
+
 export function reviewFacts(c: Capture) {
   const opened = `Opened ${c.url} (HTTP ${c.status ?? "no response"}).`;
   const errors = `Console and page errors: ${c.errors.length ? c.errors.join(" | ") : "none"}.`;
