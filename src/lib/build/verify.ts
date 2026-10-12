@@ -6,11 +6,8 @@ import { callSettings, modelFor, structuredModelId } from "@/lib/ai";
 import { putBlob, storageConfigured } from "@/lib/art/blob";
 import { recordUsage, type UsageScope } from "@/lib/usage";
 import type { BuildTask } from "@/lib/types";
+import { type Capture, type CaptureStage, reviewFacts, type Shot, type Verdict } from "./review";
 
-export type CaptureStage = "open" | "start" | "play" | "capture";
-export type Shot = { name: string; url: string };
-export type Capture = { url: string; status: number | null; shots: Shot[]; probe: Record<string, unknown> | null; errors: string[]; game: boolean };
-export type Verdict = { works: boolean; problems: string[]; visualScore: number | null; notes: string[] };
 
 const LAUNCH_ARGS = ["--use-angle=swiftshader", "--enable-unsafe-swiftshader", "--ignore-gpu-blocklist"];
 const PLAY_KEYS = ["ArrowRight", "ArrowUp", "Space", "ArrowLeft", "ArrowDown", "Space", "ArrowRight", "ArrowUp", "Space", "ArrowLeft"];
@@ -126,11 +123,7 @@ export async function judge(input: {
     content.push({ type: "text", text: `SCREENSHOT "${shot.name}"` });
     content.push({ type: "image", image: new URL(shot.url) });
   }
-  content.push({
-    type: "text",
-    text: `Opened ${c.url} (HTTP ${c.status ?? "no response"}).${c.game ? ` Screenshots: "title" after loading; then Space and a click to start; "play-early" and "play-late" after scripted arrow keys and Space for about 6 seconds. Game state reported by the game: ${JSON.stringify(c.probe)}.` : ` Screenshots: the home page at 1280×720, up to two linked pages, and the home page on a phone (390 px).`}
-Console and page errors: ${c.errors.length ? c.errors.join(" | ") : "none"}.`,
-  });
+  content.push({ type: "text", text: reviewFacts(c) });
   const { output, usage } = await generateText({
     model: modelFor(model),
     output: Output.object({ schema: verdictSchema }),
@@ -160,17 +153,4 @@ Write in English, briefly.`,
     visualScore: Math.round(Math.min(10, Math.max(1, output.visualScore))),
     notes: output.notes.slice(0, 3),
   };
-}
-
-export function verdictLog(verdict: Verdict, capture: Capture) {
-  const lines = ["Verification in the preview found problems:", ...verdict.problems.map((p) => `- ${p}`)];
-  if (capture.errors.length) lines.push("", "Console and page errors:", ...capture.errors.map((e) => `- ${e}`));
-  return lines.join("\n");
-}
-
-export function polishLog(verdict: Verdict) {
-  return [
-    `It works, but the reviewer scored the look ${verdict.visualScore}/10 against the target. Make it look like the target screenshot and docs/ART-DIRECTION.md:`,
-    ...verdict.notes.map((n) => `- ${n}`),
-  ].join("\n");
 }

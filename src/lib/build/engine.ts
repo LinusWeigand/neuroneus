@@ -24,7 +24,8 @@ import { deployStage } from "./deploy-stage";
 import { buildErrors, deploy, getDeployment, latestLogLines, productionUrl, promote } from "./vercel";
 import { advanceArt, artConfigured, type ArtState } from "./art-step";
 import { readMarker } from "./frameworks";
-import { capture, type Capture, judge, polishLog, verdictLog, verificationConfigured } from "./verify";
+import { type Capture, polishLog, verdictLog } from "./review";
+import { capture, judge, verificationConfigured } from "./verify";
 
 const ACTIVE: BuildStatus[] = ["queued", "setup", "art", "planning", "building"];
 const LEASE_MS = 310_000;
