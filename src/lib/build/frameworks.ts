@@ -1,7 +1,7 @@
 import "server-only";
-import fs from "node:fs";
-import path from "node:path";
 import type { FileMap } from "./repo";
+import type { TemplateBundle } from "./template-bundle";
+import templateBundle from "./templates.bundle.json";
 
 export type Framework = "web" | "game2d" | "game3d";
 export type Layer = "shared" | "starter" | "gamecommon" | Framework | "database";
@@ -22,29 +22,12 @@ export const VERSIONS = {
   postprocessing: "6.39.5",
 } as const;
 
-const SHARED_RULES = ["no-comments.mjs", "disable-needs-reason.mjs", "no-hex-colors.mjs"];
-
-function root() {
-  return process.cwd();
-}
-
-function walk(dir: string): string[] {
-  if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name);
-    return entry.isDirectory() ? walk(full) : [full];
-  });
-}
+const BUNDLE = templateBundle as TemplateBundle;
 
 export function layerFiles(layer: Layer): FileMap {
-  const dir = path.join(root(), "templates", layer);
-  const files: FileMap = {};
-  for (const file of walk(dir)) {
-    if (file.endsWith(".test.ts")) continue;
-    files[path.relative(dir, file).split(path.sep).join("/")] = fs.readFileSync(file, "utf8");
-  }
+  const files: FileMap = { ...(BUNDLE.layers[layer] ?? {}) };
   if (layer === "shared") {
-    for (const rule of SHARED_RULES) files[`eslint-rules/${rule}`] = fs.readFileSync(path.join(root(), "eslint-rules", rule), "utf8");
+    for (const [rule, content] of Object.entries(BUNDLE.rules)) files[`eslint-rules/${rule}`] = content;
   }
   return files;
 }
@@ -67,8 +50,11 @@ export function materialize(layers: Layer[], vars: Record<string, string>): File
 
 function skillFiles(framework: Framework | "starter"): FileMap {
   if (framework !== "game2d") return {};
-  const dir = path.join(root(), "templates", "skills", "phaser");
-  return Object.fromEntries(walk(dir).map((file) => [`docs/skills/phaser/${path.basename(file)}`, fs.readFileSync(file, "utf8")]));
+  return Object.fromEntries(
+    Object.entries(BUNDLE.skills)
+      .filter(([file]) => file.startsWith("phaser/"))
+      .map(([file, content]) => [`docs/skills/${file}`, content]),
+  );
 }
 
 export function packageJson(input: { slug: string; framework: Framework | "starter"; database: boolean }) {

@@ -14,8 +14,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "verify": "tsx scripts/verify/cli.mts",
-    "check:templates": "tsx --conditions react-server scripts/check-templates.mts",
-    "art:library": "tsx --conditions react-server scripts/art/build-kenney-library.mts"
+    "check:templates": "tsx scripts/bundle-templates.mts && tsx --conditions react-server scripts/check-templates.mts",
+    "art:library": "tsx --conditions react-server scripts/art/build-kenney-library.mts",
+    "templates:bundle": "tsx scripts/bundle-templates.mts"
   },
   "dependencies": {
     "@ai-sdk/azure": "^4.0.86",

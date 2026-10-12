@@ -6,9 +6,10 @@ const nextConfig: NextConfig = {
     "/api/**": [
       "./node_modules/getdesign/templates/**/*",
       "./node_modules/getdesign/package.json",
-      "./templates/**/*",
-      "./eslint-rules/*.mjs",
     ],
+  },
+  outputFileTracingExcludes: {
+    "/**": ["./templates/**/*"],
   },
 };
 
