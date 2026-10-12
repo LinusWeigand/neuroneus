@@ -403,9 +403,10 @@ async function deployStep(build: BuildRow, project: ProjectRow): Promise<boolean
     return deployed(build, project);
   }
   if (d.readyState === "ERROR" || d.readyState === "CANCELED") {
-    await logEvent(build.id, { kind: "deploy_failed", agentId, taskIndex: build.taskIndex });
-    const log = await buildErrors(deploymentId);
-    return buildFailed(build, project, log || d.errorMessage || "The build failed without output.");
+    const log = (await buildErrors(deploymentId)) || d.errorMessage || "The build failed without output.";
+    const firstError = log.split("\n").find((line) => line.trim())?.trim().slice(0, 200);
+    await logEvent(build.id, { kind: "deploy_failed", agentId, taskIndex: build.taskIndex, detail: firstError });
+    return buildFailed(build, project, log);
   }
   return true;
 }
