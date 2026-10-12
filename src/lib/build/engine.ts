@@ -462,12 +462,12 @@ async function verifyStep(build: BuildRow, project: ProjectRow): Promise<boolean
   if (!state) {
     const d = await getDeployment(build.deploymentId);
     try {
-      const result = await capture({
+      const result = await withTimeout(240_000, capture({
         url: `https://${d.url}`,
         game,
         evidencePrefix: `${project.id}/${build.id}/${task.id}-${build.fixAttempts}`,
         onStage: (stage) => setActivity(build.id, { kind: "verifying", stage, agentId }),
-      });
+      }));
       await saveBlobs(build.id, { verify: { capture: result } satisfies VerifyState });
       await patch(build.id, {});
       return true;
@@ -521,6 +521,10 @@ async function verifyStep(build: BuildRow, project: ProjectRow): Promise<boolean
   }
   await logEvent(build.id, { kind: "verified", agentId, taskIndex: build.taskIndex });
   return ship(current, project, vercel.id, build.deploymentId);
+}
+
+function withTimeout<T>(ms: number, work: Promise<T>): Promise<T> {
+  return Promise.race([work, new Promise<never>((_, reject) => setTimeout(() => reject(new Error(`Timed out after ${ms / 1000} s.`)), ms))]);
 }
 
 async function ship(build: BuildRow, project: ProjectRow, vercelProjectId: string, deploymentId: string | null): Promise<boolean> {
