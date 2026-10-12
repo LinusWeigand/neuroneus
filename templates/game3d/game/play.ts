@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { hex } from "./color";
 import type { Fx } from "./juice";
-import { instance, type Models } from "./models";
+import { animator, type Animator, instance, type Models } from "./models";
 import type { Input } from "./input";
 import { sfx } from "./sfx";
 import { recordScore } from "./storage";
@@ -15,6 +15,7 @@ type Thing = { mesh: THREE.Object3D; velocity: THREE.Vector3; kind: "pickup" | "
 
 export class Play {
   private player: THREE.Object3D;
+  private playerMotion: Animator | null;
   private things: Thing[] = [];
   private spawnPickup = 0;
   private spawnHazard = 0;
@@ -32,6 +33,8 @@ export class Play {
     private fx: Fx,
   ) {
     this.player = instance(models, "player", 2.2) ?? this.fallbackPlayer();
+    this.playerMotion = animator(models, "player", this.player);
+    this.playerMotion?.play("idle");
     scene.add(this.player, arenaEdge());
     this.reset();
   }
@@ -53,6 +56,7 @@ export class Play {
   idle(dt: number) {
     this.elapsed += dt;
     this.player.rotation.y += dt * 0.6;
+    this.playerMotion?.update(dt);
     const angle = this.elapsed * 0.15;
     this.camera.position.set(Math.sin(angle) * 22, 10, Math.cos(angle) * 22);
     this.camera.lookAt(0, 1, 0);
@@ -63,6 +67,8 @@ export class Play {
     this.elapsed += dt;
     this.invulnerable = Math.max(0, this.invulnerable - dt);
     const move = this.move.set(this.input.x, 0, this.input.y);
+    this.playerMotion?.play(move.lengthSq() > 0 ? "run" : "idle");
+    this.playerMotion?.update(dt);
     if (move.lengthSq() > 0) {
       this.player.position.addScaledVector(move, SPEED * dt);
       this.player.rotation.y = turnToward(this.player.rotation.y, Math.atan2(move.x, move.z), 1 - Math.pow(0.0001, dt));
