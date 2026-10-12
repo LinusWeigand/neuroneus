@@ -5,7 +5,7 @@ import type { ArtPlan } from "./director";
 import { generateImage } from "./flux";
 import { gameText, type GameLanguage } from "./game-text";
 import type { LibraryIndex } from "./library";
-import { cutOut, toBackground, toJpeg } from "./process";
+import { CutoutError, cutOut, toBackground, toJpeg } from "./process";
 import type { GameStyle } from "./styles";
 
 export type ArtAsset = {
@@ -68,23 +68,31 @@ export async function paintAssets(input: {
     const stored = await store(projectId, key, webp, "image/webp");
     return { key, path: `public/assets/art/${key}.webp`, ...stored, width: 1920, height: 1080, source: "painted", kind: "image" } satisfies ArtAsset;
   };
-  const sprite = async (key: string, prompt: string, display: number) => {
-    const image = await generateImage({
-      prompt: `${prompt}. A single game sprite of this one object, centered, filling most of the frame, in exactly the art style, palette and line work of the reference image, on a solid flat pure magenta #FF00FF background, no shadow, no ground, no text, nothing else.`,
-      width: 768,
-      height: 768,
-      references,
-    });
-    const cut = await cutOut(image, Math.min(512, Math.max(96, display * 2)));
-    const stored = await store(projectId, key, cut.data, "image/png");
-    return { key, path: `public/assets/art/${key}.png`, ...stored, width: cut.width, height: cut.height, display, source: "painted", kind: "image" } satisfies ArtAsset;
+  const sprite = async (key: string, prompt: string, display: number): Promise<ArtAsset | null> => {
+    for (let attempt = 0; attempt < 2; attempt++) {
+      const image = await generateImage({
+        prompt: `${prompt}. A single game sprite of this one object, centered, filling most of the frame, in exactly the art style, palette and line work of the reference image. The background is one perfectly flat, untextured pure magenta #FF00FF right up to the object's outline: no paper texture, no gradient, no glow or light on the background, no cast shadow, no ground, no text, nothing else.`,
+        width: 768,
+        height: 768,
+        references,
+      });
+      try {
+        const cut = await cutOut(image, Math.min(512, Math.max(96, display * 2)));
+        const stored = await store(projectId, key, cut.data, "image/png");
+        return { key, path: `public/assets/art/${key}.png`, ...stored, width: cut.width, height: cut.height, display, source: "painted", kind: "image" };
+      } catch (err) {
+        if (!(err instanceof CutoutError)) throw err;
+        console.warn(`[art] ${key}: ${err.message}`);
+      }
+    }
+    return null;
   };
-  const tasks: (() => Promise<ArtAsset>)[] = [
+  const tasks: (() => Promise<ArtAsset | null>)[] = [
     () => scenery("background", input.plan.background),
     () => scenery("title", input.plan.title),
     ...plan.sprites.map((s) => () => sprite(s.key, s.prompt, s.size)),
   ];
-  const painted = await limit(tasks, 3);
+  const painted = (await limit(tasks, 3)).filter((asset): asset is ArtAsset => asset !== null);
   const kenney: ArtAsset[] = [];
   for (const pick of plan.kenney) {
     const file = input.index?.packs[pick.pack]?.files.find((f) => f.path === pick.file);
