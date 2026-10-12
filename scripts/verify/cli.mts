@@ -27,7 +27,7 @@ const HELP = `pnpm verify <command> [options]
 Drives a running Neuroneus the way a user does and saves evidence to .verify/evidence/.
 
 Commands
-  launch [--profile local|full] [--port 3400]   build and start an instance (local: no GitHub, Vercel or Neon)
+  launch [--profile local|full] [--port 3400]   build and start the standalone (deployed) shape (local: no GitHub, Vercel or Neon)
   doctor [--url http://localhost:3300]          is the instance worth driving?
   features                                      list the features drive knows
   drive <feature> [--project <id>] [--message <text>] [--name <text>] [--vision <text>] [--url <base>]
@@ -91,8 +91,14 @@ async function waitFor(check: () => Promise<boolean>, timeoutMs: number, interva
   return false;
 }
 
+function passwordFor(base: string) {
+  const instance = readInstance();
+  if (instance && instance.url === base) return instance.password;
+  return process.env.VERIFY_PASSWORD ?? instance?.password ?? "";
+}
+
 async function signIn(base: string) {
-  const password = readInstance()?.password ?? process.env.VERIFY_PASSWORD ?? "";
+  const password = passwordFor(base);
   const res = await fetch(`${base}/api/auth`, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -115,7 +121,7 @@ async function launch(profile: Profile, preferredPort: number) {
   if (!process.env.DATABASE_URL) out({ ok: false, error: "DATABASE_URL is not set (.env.local). Start the scratch database first, see the skill's Launch section." });
 
   const password = randomBytes(16).toString("hex");
-  const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "production", APP_PASSWORD: password };
+  const env: NodeJS.ProcessEnv = { ...process.env, NODE_ENV: "production", APP_PASSWORD: password, NN_STANDALONE: "1" };
   if (profile === "local") for (const key of OFFLINE_ENV) env[key] = "";
 
   const build = spawn("pnpm", ["build"], { cwd: ROOT, env, stdio: "pipe" });
@@ -128,7 +134,15 @@ async function launch(profile: Profile, preferredPort: number) {
   const port = await freePort(preferredPort);
   const log = path.join(STATE_DIR, `instance-${port}.log`);
   const logFd = fs.openSync(log, "w");
-  const server = spawn("pnpm", ["next", "start", "--port", String(port)], { cwd: ROOT, env, detached: true, stdio: ["ignore", logFd, logFd] });
+  const standalone = path.join(ROOT, ".next", "standalone");
+  fs.cpSync(path.join(ROOT, ".next", "static"), path.join(standalone, ".next", "static"), { recursive: true });
+  if (fs.existsSync(path.join(ROOT, "public"))) fs.cpSync(path.join(ROOT, "public"), path.join(standalone, "public"), { recursive: true });
+  const server = spawn("node", ["server.js"], {
+    cwd: standalone,
+    env: { ...env, PORT: String(port), HOSTNAME: "localhost" },
+    detached: true,
+    stdio: ["ignore", logFd, logFd],
+  });
   server.unref();
   const url = `http://localhost:${port}`;
   const ready = await waitFor(async () => (await fetch(url)).ok, 90_000);

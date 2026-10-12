@@ -15,7 +15,7 @@ description: Drive a real Neuroneus instance (the Next.js app in this repo) the 
    mkdir -p /tmp/nnpg && LC_ALL=en_US.UTF-8 pg_ctl -D $D -o "-p 5433 -k /tmp/nnpg" -l $D.log start
    createdb -h localhost -p 5433 -U postgres neuroneus 2>/dev/null; pnpm db:migrate
    ```
-2. `pnpm verify launch` builds and starts a production instance on a free port from 3400, behind the real password gate with a random test password kept in `.verify/instance.json`.
+2. `pnpm verify launch` builds and starts a production instance on a free port from 3400, behind the real password gate with a random test password kept in `.verify/instance.json`. It runs the standalone build (`.next/standalone`), which holds only the files Next traced into the server, the same set Vercel ships: a file the tracer misses fails here, not in production. To drive any other URL (a preview, production), pass `--url` and the password in `VERIFY_PASSWORD`.
    - `--profile local` (default) blanks GitHub, Vercel and Neon credentials, so creating a project touches nothing outside this machine. Azure models still run.
    - `--profile full` keeps them: projects get real repositories, Vercel projects and databases. Use it only when the task is about building or deploying, and delete what you create (`drive delete-project`).
 3. Ready means `launch` returned `ok: true`. It runs next to a dev server without conflict.
