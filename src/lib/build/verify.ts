@@ -1,6 +1,6 @@
 import "server-only";
 import { generateText, Output, type UserContent } from "ai";
-import { chromium, type Page } from "playwright-core";
+import type { Page } from "playwright-core";
 import { z } from "zod";
 import { callSettings, modelFor, structuredModelId } from "@/lib/ai";
 import { putBlob, storageConfigured } from "@/lib/art/blob";
@@ -28,6 +28,7 @@ export async function capture(input: {
   evidencePrefix: string;
   onStage: (stage: CaptureStage) => Promise<void>;
 }): Promise<Capture> {
+  const { chromium } = await import("playwright-core");
   const browser = await chromium.connect(process.env.BROWSER_WS_ENDPOINT!, {
     timeout: 150_000,
     headers: { "x-playwright-launch-options": JSON.stringify({ args: LAUNCH_ARGS }) },

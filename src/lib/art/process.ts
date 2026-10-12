@@ -1,9 +1,12 @@
 import "server-only";
-import sharp from "sharp";
 
 export type Rgb = [number, number, number];
 
 export class CutoutError extends Error {}
+
+async function loadSharp() {
+  return (await import("sharp")).default;
+}
 
 function distance(data: Uint8Array, i: number, [r, g, b]: Rgb) {
   const dr = data[i] - r;
@@ -152,6 +155,7 @@ function dropSpecks(data: Uint8Array, width: number, height: number) {
 }
 
 export async function cutOut(png: Buffer, maxSize = 512): Promise<{ data: Buffer; width: number; height: number }> {
+  const sharp = await loadSharp();
   const { data, info } = await sharp(png).ensureAlpha().raw().toBuffer({ resolveWithObject: true });
   const { clear } = keyBackground(data, info.width, info.height);
   if (clear < 0.9) throw new CutoutError(`The sprite's background could not be removed (${Math.round(clear * 100)}% of the border cleared).`);
@@ -167,14 +171,17 @@ export async function cutOut(png: Buffer, maxSize = 512): Promise<{ data: Buffer
 }
 
 export async function toBackground(png: Buffer, width = 1920, height = 1080) {
+  const sharp = await loadSharp();
   return sharp(png).resize({ width, height, fit: "cover" }).webp({ quality: 86 }).toBuffer();
 }
 
 export async function toJpeg(png: Buffer, width = 1280) {
+  const sharp = await loadSharp();
   return sharp(png).resize({ width, withoutEnlargement: true }).jpeg({ quality: 82 }).toBuffer();
 }
 
 export async function contactSheet(images: { data: Buffer; label: string }[], cell = 256) {
+  const sharp = await loadSharp();
   const columns = Math.min(4, images.length);
   const rows = Math.ceil(images.length / columns);
   const tiles = await Promise.all(
