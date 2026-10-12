@@ -3,6 +3,7 @@ import { createFx } from "./juice";
 import { createInput } from "./input";
 import { createLook } from "./look";
 import { loadModels } from "./models";
+import { createQuality } from "./quality";
 import { Play } from "./play";
 import { probe } from "./probe";
 import { sfx } from "./sfx";
@@ -14,7 +15,6 @@ export function startGame(host: HTMLElement) {
   sfx.init();
   probe.attach();
   const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance", stencil: false });
-  renderer.setPixelRatio(Math.min(2, window.devicePixelRatio));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.outputColorSpace = THREE.SRGBColorSpace;
@@ -23,7 +23,7 @@ export function startGame(host: HTMLElement) {
 
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(55, 16 / 9, 0.1, 300);
-  createWorld(scene);
+  createWorld(scene, renderer);
   const look = createLook(renderer, scene, camera);
   const fx = createFx(scene, camera);
   const input = createInput(host);
@@ -40,6 +40,7 @@ export function startGame(host: HTMLElement) {
     camera.updateProjectionMatrix();
     look.setSize(width, height);
   };
+  const quality = createQuality(renderer, resize);
   window.addEventListener("resize", resize);
   resize();
 
@@ -112,6 +113,7 @@ export function startGame(host: HTMLElement) {
     }
     fx.update(dt);
     look.render(dt);
+    quality.tick(performance.now());
   };
   tick();
 

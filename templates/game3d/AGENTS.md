@@ -10,7 +10,7 @@ A 3D web game: Next.js 16 (static page), Three.js (WebGL) with `postprocessing`,
 | `game/main.ts` | Renderer, scene, camera, the frame loop and the screen flow (loading, title, play, paused, over). | Extend it; keep the flow. |
 | `game/store.ts` | The game state the HUD shows (`screen`, `score`, `lives`, `best`, …) and the `actions` the HUD calls. Mirrors itself into the probe. | Add fields the HUD needs; change state only with `store.set`. |
 | `components/hud.tsx` | Title screen, HUD, pause menu and game over, as HTML over the canvas. | Adapt it to the game. All UI lives here. |
-| `game/world.ts` | Sky, fog, lights with shadows, ground and scenery. | Shape it to the game's world. |
+| `game/world.ts` | Sky, fog, lights with shadows, faceted terrain (flat in the arena, hills beyond; `heightAt(x, z)` gives the ground height) and scenery. | Shape it to the game's world. |
 | `game/models.ts` | Loads every model in `game/assets.ts`; `instance(models, key, size)` gives a copy scaled to `size` world units, standing on the ground. | Use it for every model. |
 | `game/assets.ts` | The asset manifest: model and image keys and paths. Generated. | Read it; load assets by key. |
 | `game/palette.ts`, `app/palette.css`, `app/fonts.ts` | Colors, look and fonts of the art direction. Generated. | Read; never write colors elsewhere. |

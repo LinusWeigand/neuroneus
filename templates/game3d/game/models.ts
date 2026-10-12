@@ -4,6 +4,10 @@ import { MODEL_ENTRIES } from "./assets";
 
 export type Models = Record<string, THREE.Object3D>;
 
+function matte(material: THREE.Material) {
+  if (material instanceof THREE.MeshStandardMaterial && !material.metalnessMap && material.metalness > 0.5) material.metalness = 0;
+}
+
 export async function loadModels(onProgress: (value: number) => void): Promise<Models> {
   const loader = new GLTFLoader();
   const models: Models = {};
@@ -13,10 +17,11 @@ export async function loadModels(onProgress: (value: number) => void): Promise<M
       try {
         const gltf = await loader.loadAsync(url);
         gltf.scene.traverse((child) => {
-          if ((child as THREE.Mesh).isMesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
+          const mesh = child as THREE.Mesh;
+          if (!mesh.isMesh) return;
+          mesh.castShadow = true;
+          mesh.receiveShadow = true;
+          for (const material of [mesh.material].flat()) matte(material);
         });
         models[key] = gltf.scene;
       } catch {}
