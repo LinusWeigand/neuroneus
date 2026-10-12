@@ -75,6 +75,7 @@ export function keyBackground(data: Uint8Array, width: number, height: number) {
     }
   }
 
+  const edge = edgeDistance(removed, width, height, Math.max(2, Math.round(Math.min(width, height) * 0.015)));
   for (let p = 0; p < width * height; p++) {
     const i = p * 4;
     if (removed[p]) {
@@ -86,10 +87,13 @@ export function keyBackground(data: Uint8Array, width: number, height: number) {
       data[i + 3] = 0;
       continue;
     }
-    const x = p % width;
-    const touchesBackground = (x > 0 && removed[p - 1]) || (x < width - 1 && removed[p + 1]) || removed[p - width] || removed[p + width];
-    if (!touchesBackground) continue;
-    const alpha = Math.min(1, Math.max(0.15, (d - tolerance) / tolerance));
+    if (!edge[p]) continue;
+    const alpha = Math.min(1, (d - tolerance) / (edge[p] === 1 ? tolerance : tolerance * 2));
+    if (alpha >= 1) continue;
+    if (alpha < 0.08) {
+      data[i + 3] = 0;
+      continue;
+    }
     for (let c = 0; c < 3; c++) data[i + c] = Math.round(Math.min(255, Math.max(0, (data[i + c] - background[c] * (1 - alpha)) / alpha)));
     data[i + 3] = Math.min(data[i + 3], Math.round(alpha * 255));
   }
@@ -98,6 +102,26 @@ export function keyBackground(data: Uint8Array, width: number, height: number) {
 
   const clear = border.filter((p) => data[p * 4 + 3] === 0).length / border.length;
   return { background, tolerance, clear };
+}
+
+function edgeDistance(removed: Uint8Array, width: number, height: number, reach: number) {
+  const steps = new Uint8Array(width * height);
+  let frontier: number[] = [];
+  for (let p = 0; p < width * height; p++) if (removed[p]) frontier.push(p);
+  for (let step = 1; step <= reach && frontier.length; step++) {
+    const next: number[] = [];
+    for (const p of frontier) {
+      const x = p % width;
+      for (const n of [x > 0 ? p - 1 : -1, x < width - 1 ? p + 1 : -1, p - width, p + width]) {
+        if (n >= 0 && n < width * height && !removed[n] && !steps[n]) {
+          steps[n] = step;
+          next.push(n);
+        }
+      }
+    }
+    frontier = next;
+  }
+  return steps;
 }
 
 function dropSpecks(data: Uint8Array, width: number, height: number) {
