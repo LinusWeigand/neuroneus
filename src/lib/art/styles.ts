@@ -247,7 +247,7 @@ export const GAME_STYLES: GameStyle[] = [
     artPrompt:
       "low-poly 3D render, flat-shaded facets, warm sunset lighting, soft fog, simple geometric landscapes, stylized and colorful",
     rules: ["Flat shading, no textures on terrain; color carries the mood.", "Warm key light, cool fill, distance fog in the sky color."],
-    kenney: ["car-kit", "racing-kit", "nature-kit", "particle-pack"],
+    kenney: ["car-kit", "racing-kit", "nature-kit", "cube-pets", "blocky-characters", "food-kit", "particle-pack"],
     sprites: "kenney",
   },
   {
@@ -273,7 +273,7 @@ export const GAME_STYLES: GameStyle[] = [
     look: { bloom: 0.15, bloomThreshold: 0.85, vignette: 0.15, saturation: 1.15, contrast: 1, outline: 4, corner: 22, shadow: 0.3 },
     artPrompt: "glossy toy-like 3D render, chunky rounded plastic shapes, bright primary colors, soft studio lighting, miniature diorama",
     rules: ["Chunky, rounded, glossy: everything looks like a toy.", "Soft shadows under every object so it sits on the ground."],
-    kenney: ["car-kit", "platformer-kit", "particle-pack"],
+    kenney: ["car-kit", "platformer-kit", "cube-pets", "blocky-characters", "food-kit", "particle-pack"],
     sprites: "kenney",
   },
 ];

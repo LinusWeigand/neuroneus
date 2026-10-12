@@ -18,6 +18,9 @@ export const KENNEY_PACKS: KenneyPack[] = [
   { slug: "racing-kit", name: "Racing Kit", dimension: "3d", include: /^Models\/(GLB|GLTF) format\/.*\.(glb|png)$/i, strip: /^Models\/(GLB|GLTF) format\// },
   { slug: "nature-kit", name: "Nature Kit", dimension: "3d", include: /^Models\/(GLB|GLTF) format\/.*\.(glb|png)$/i, strip: /^Models\/(GLB|GLTF) format\// },
   { slug: "platformer-kit", name: "Platformer Kit", dimension: "3d", include: /^Models\/(GLB|GLTF) format\/.*\.(glb|png)$/i, strip: /^Models\/(GLB|GLTF) format\// },
+  { slug: "cube-pets", name: "Cube Pets (animals)", dimension: "3d", include: /^Models\/GLB format\/.*\.(glb|png)$/i, strip: /^Models\/GLB format\// },
+  { slug: "blocky-characters", name: "Blocky Characters (people)", dimension: "3d", include: /^Models\/GLB format\/.*\.(glb|png)$/i, strip: /^Models\/GLB format\// },
+  { slug: "food-kit", name: "Food Kit (fruit, vegetables, sweets, dishes)", dimension: "3d", include: /^Models\/GLB format\/.*\.(glb|png)$/i, strip: /^Models\/GLB format\// },
 ];
 
 export const LIBRARY_INDEX_PATH = "kenney/index.json";
