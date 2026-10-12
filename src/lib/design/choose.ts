@@ -25,7 +25,7 @@ export async function chooseDesign(
       abortSignal: AbortSignal.timeout(120_000),
       instructions: `You are the design lead. Pick the one design system (a DESIGN.md) this ${
         input.spec.kind === "web_game" ? "web game" : "web app"
-      } will be built with. Match the audience, the mood the human asked for, and the kind of product: content-heavy tools need calm, readable systems; consumer and playful products can take bolder ones; games need an expressive system whose palette and type also work for menus, HUD and game art. The brand name is only a style reference; nothing of the brand itself appears in the app.
+      } will be built with. Match the audience, the mood the human asked for, and the kind of product; never pick a system whose palette contradicts colors or a mood the human named: content-heavy tools need calm, readable systems; consumer and playful products can take bolder ones; games need an expressive system whose palette and type also work for menus, HUD and game art. The brand name is only a style reference; nothing of the brand itself appears in the app.
 
 Design systems (slug: description):
 ${options.map((o) => `- ${o.slug}: ${o.description}`).join("\n")}`,

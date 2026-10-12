@@ -138,7 +138,7 @@ export async function prepareApp(
     const designChanged = marker.design !== p.designSlug;
     if (!files["DESIGN.md"] || designChanged) files["DESIGN.md"] = await loadDesign(p.designSlug!);
     if (!files["docs/DESIGN-BRIEF.md"] || designChanged) {
-      const brief = await designBrief(scope, { name: designName(p.designSlug!), markdown: files["DESIGN.md"] });
+      const brief = await designBrief(scope, { name: designName(p.designSlug!), markdown: files["DESIGN.md"], lookFeel: spec.answers.look_feel?.value ?? null });
       if (brief) files["docs/DESIGN-BRIEF.md"] = brief;
     }
     files[".neuroneus.json"] = JSON.stringify({ ...readMarker(files), kind: spec.kind, design: p.designSlug }, null, 2) + "\n";
@@ -174,7 +174,7 @@ async function prepareLegacyApp(p: ProjectRow, scope: UsageScope, before: FileMa
   const designChanged = marker.design !== p.designSlug;
   if (!files["DESIGN.md"] || designChanged) files["DESIGN.md"] = await loadDesign(p.designSlug!);
   if (!files["docs/DESIGN-BRIEF.md"] || designChanged) {
-    const brief = await designBrief(scope, { name: designName(p.designSlug!), markdown: files["DESIGN.md"] });
+    const brief = await designBrief(scope, { name: designName(p.designSlug!), markdown: files["DESIGN.md"], lookFeel: spec.answers.look_feel?.value ?? null });
     if (brief) files["docs/DESIGN-BRIEF.md"] = brief;
     else delete files["docs/DESIGN-BRIEF.md"];
   }

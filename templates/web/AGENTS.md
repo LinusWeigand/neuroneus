@@ -24,7 +24,7 @@ The build runs ESLint first (`npm run build`), so these fail the deploy:
 | No `any`, no `@ts-ignore`. | TypeScript, ESLint |
 
 Judgment rules, checked by a reviewer who opens every deploy and compares it to the spec:
-- Every screen follows DESIGN.md: its tokens, type scale, components, do's and don'ts.
+- Every screen follows the design: the tokens in `docs/DESIGN-BRIEF.md` (they win where the palette was adapted to this product), and DESIGN.md's type scale, components, do's and don'ts.
 - Empty, loading and error states exist and look designed.
 - Works on a phone (390 px) and a desktop (1440 px).
 - Next.js 16: `params` and `searchParams` are Promises; `cookies()` and `headers()` are async; mutations are Server Actions followed by `revalidatePath`.
