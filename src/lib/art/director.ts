@@ -100,7 +100,7 @@ export async function pickKenney(scope: UsageScope, input: { style: GameStyle; s
     maxRetries: 1,
     abortSignal: AbortSignal.timeout(200_000),
     instructions: `You pick ready-made ${input.style.dimension.toUpperCase()} game assets from a library for a ${input.style.name} game. Pick the 3 to 14 files the game's code needs: the player, enemies, items, obstacles and the tiles or props for the world. Use files from one pack where possible, so the look stays consistent, but take the characters from the pack that has them.
-Every pick must look like the thing its key names: a carrot is not a fox. When nothing in the library fits a game object, leave it out; the code builds it from simple shapes in the palette.
+Every pick must look like the thing its key names: a carrot is not a fox. When nothing in the library fits a game object, leave it out; the code builds it from simple shapes in the palette.${input.style.dimension === "3d" ? " Never pick ground or floor tiles: the code draws the terrain." : ""}
 
 For each pick: key (a camelCase id the code uses, e.g. player, coin, groundTile, tree; the object the player controls is always player), pack, file (exactly as listed), size (display size in px on a 1280×720 screen, or the length in world units for 3D models, 1 to 40).
 

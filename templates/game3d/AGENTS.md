@@ -35,7 +35,8 @@ The build runs ESLint first (`npm run build`), so these fail the deploy:
 
 Judgment rules, checked by a reviewer who plays every deploy and compares it to the target screenshot:
 - Every player action gets feedback: a sound, a particle burst, a pop or shake, the score number popping in the HUD.
-- The camera frames the action the way the target screenshot does; it follows smoothly (lerp), never snaps.
+- The camera frames the action the way the target screenshot does: behind and above the player, the horizon and scenery in view, the player about a tenth of the screen height. It follows smoothly (lerp), never snaps.
+- Keep the terrain from `game/world.ts` (recolor or reshape it there); never cover it with a scaled-up tile or plane. Scenery stands on it at `heightAt(x, z)`.
 - Models keep their proportions: size them with `instance(models, key, size)` to the sizes in `docs/ART-DIRECTION.md`. Lights cast shadows; objects that matter cast them too.
 - Bright things glow: give pickups and effects emissive materials in palette colors so the bloom catches them.
 - The HUD uses `font-game-display` for numbers and titles, `font-game-body` for the rest, and the palette colors. Nothing important within 24 px of the edges.

@@ -21,7 +21,7 @@ export class Play {
   private spawnHazard = 0;
   private invulnerable = 0;
   private elapsed = 0;
-  private readonly cameraOffset = new THREE.Vector3(0, 11, 15);
+  private readonly cameraOffset = new THREE.Vector3(0, 6.5, 11);
   private readonly move = new THREE.Vector3();
   private readonly cameraTarget = new THREE.Vector3();
 
@@ -93,7 +93,7 @@ export class Play {
   private follow(dt: number) {
     this.cameraTarget.copy(this.player.position).add(this.cameraOffset);
     this.camera.position.lerp(this.cameraTarget, 1 - Math.pow(0.001, dt));
-    this.camera.lookAt(this.player.position.x, 1, this.player.position.z);
+    this.camera.lookAt(this.player.position.x, 1.2, this.player.position.z - 7);
   }
 
   private animateThings(dt: number, live: boolean) {
