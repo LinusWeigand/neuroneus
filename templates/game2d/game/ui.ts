@@ -2,6 +2,7 @@ import * as Phaser from "phaser";
 import { hex, type PaletteColor } from "./color";
 import { font, type FontRole } from "./fonts";
 import { squash } from "./juice";
+import { HUD_DEPTH } from "./look";
 import { LOOK, PALETTE } from "./palette";
 import { sfx } from "./sfx";
 
@@ -88,14 +89,27 @@ export function menu(scene: Phaser.Scene, buttons: Button[]) {
 
 export function hudCounter(scene: Phaser.Scene, x: number, y: number, title: string, align: "left" | "right" = "left") {
   const origin = align === "left" ? 0 : 1;
-  const caption = label(scene, x, y, title.toUpperCase(), { size: 16, color: "textMuted", role: "body", stroke: false }).setOrigin(origin, 0);
-  const value = label(scene, x, y + 20, "0", { size: 38 }).setOrigin(origin, 0);
-  const group = scene.add.container(0, 0, [caption, value]).setScrollFactor(0).setDepth(9_000);
+  const pad = 14;
+  const backing = scene.add.graphics();
+  const caption = label(scene, 0, pad - 2, title.toUpperCase(), { size: 15, color: "textMuted", role: "body", stroke: false, shadow: false }).setOrigin(origin, 0);
+  const value = label(scene, 0, pad + 16, "0", { size: 36 }).setOrigin(origin, 0);
+  const group = scene.add.container(x, y, [backing, caption, value]).setScrollFactor(0).setDepth(HUD_DEPTH);
+  const layout = () => {
+    const width = Math.max(caption.width, value.width, 56) + pad * 2;
+    const height = value.y + value.height + pad - 6;
+    const left = align === "left" ? -pad : pad - width;
+    backing.clear();
+    if (LOOK.shadow > 0) backing.fillStyle(hex("outline"), LOOK.shadow).fillRoundedRect(left, 6, width, height, LOOK.corner);
+    backing.fillStyle(hex("surface"), 0.88).fillRoundedRect(left, 0, width, height, LOOK.corner);
+    if (LOOK.outline > 0) backing.lineStyle(Math.max(2, LOOK.outline / 2), hex("outline"), 1).strokeRoundedRect(left, 0, width, height, LOOK.corner);
+  };
+  layout();
   return {
     group,
     set(n: number | string) {
       if (value.text === String(n)) return;
       value.setText(String(n));
+      layout();
       squash(value, 1.18, 1.18, 80);
     },
   };

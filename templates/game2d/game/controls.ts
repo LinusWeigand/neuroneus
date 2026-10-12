@@ -1,4 +1,5 @@
 import * as Phaser from "phaser";
+import { HUD_DEPTH } from "./look";
 import { hex } from "./color";
 
 type KeyName = "W" | "A" | "S" | "D" | "UP" | "DOWN" | "LEFT" | "RIGHT" | "SPACE" | "ENTER" | "Z" | "P" | "ESC";
@@ -27,7 +28,7 @@ export function createControls(scene: Phaser.Scene): Controls {
   let touchActionPressed = false;
   const { width, height } = scene.scale;
   const button = { x: width - 110, y: height - 110, r: 58 };
-  const overlay = touch ? scene.add.graphics().setScrollFactor(0).setDepth(10_000) : null;
+  const overlay = touch ? scene.add.graphics().setScrollFactor(0).setDepth(HUD_DEPTH + 1_000) : null;
 
   if (touch) {
     scene.input.addPointer(2);

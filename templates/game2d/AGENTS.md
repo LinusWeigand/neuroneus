@@ -14,7 +14,7 @@ A 2D web game: Next.js 16 (static page), Phaser 4 (WebGL), TypeScript strict, de
 | `game/text.ts` | Every word the player sees, in the game's language. | Add strings here. |
 | `game/ui.ts` | In-engine UI: `label`, `panel`, `button`, `menu`, `hudCounter`. | Build all menus and HUD with it. |
 | `game/juice.ts` | Game feel: `shake`, `flash`, `hitStop`, `popText`, `squash`, `burst`, `trail`, `float`, `pulse`, `go`, `arrive`. | Use on every player action. |
-| `game/look.ts` | Post-processing: bloom, vignette, color grade from the palette. | Call `applyLook(this)` in each scene's `create`. |
+| `game/look.ts` | Post-processing: bloom, vignette, color grade from the palette, on the world camera. Objects at depth `HUD_DEPTH` (9000) or above are HUD: a second camera draws them crisp, unfiltered and unshaken. | Call `applyLook(this)` in each scene's `create`; give HUD elements `setDepth(HUD_DEPTH)`. |
 | `game/backdrop.ts` | The background (painted art if present, else a gradient with glow). | Call `backdrop(this)` first in each scene. |
 | `game/controls.ts` | Keyboard, mouse and touch (on-screen stick and button) as one `Controls`. | Use instead of raw input. |
 | `game/sfx.ts` | Sound effects (ZzFX): `sfx.play("pickup" | "hit" | "explode" | "jump" | "select" | "powerup" | "lose" | "start")`. | Play one on every action. |
